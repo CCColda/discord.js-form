@@ -4,7 +4,7 @@ type TCallbackMap = Map<string, TCallback>;
 /** Arguments for discord.js/TextChannel.send */
 interface TMessageContent {
     content: string | Object;
-    extra_content: Object?;
+    extra_content?: Object;
 }
 
 /** Interface for manipulating a form */
