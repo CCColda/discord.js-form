@@ -1,9 +1,17 @@
+[![NPM](https://nodei.co/npm/discord.js-form.png)](https://nodei.co/npm/discord.js-form/)
+
 # discord.js-form
 An utility to create simple forms with reactions in discord. Supports both JavaScript and TypeScript. This could be used for:
  - simple yes / no questions
  - polls
  - music players
  - scrolling lists
+
+# Installation
+To install, open a shell at your bot directory and run:
+```
+npm i discord.js-form
+```
 
 # Usage Example
 *Scrolling lists*
