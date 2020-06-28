@@ -1,7 +1,6 @@
 const createForm = (message, buttons, callbacks) => {
     if (! message) throw Error("Missing message for discordForm");
     if (! buttons) throw Error("Missing buttons for discordForm");
-    if (! callbacks) throw Error("Missing callbacks for discordForm");
 
     if (! message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
         throw Error("Missing ADD_REACTIONS privilege");
@@ -12,7 +11,7 @@ const createForm = (message, buttons, callbacks) => {
     /** @type {TCallbackMap} */
     let formCallbacks = callbacks instanceof Map
         ? new Map(callbacks)
-        : new Map(Object.entries(callbacks));
+        : new Map(Object.entries(callbacks || {}));
 
     const formMessage = message;
 
@@ -93,11 +92,9 @@ const createForm = (message, buttons, callbacks) => {
             if (resolved) {
                 const users = await resolved.users.fetch();
 
-                for (const user of users) {
-                    if (user[1] != formMessage.guild.me.user) {
-                        await resolved.users.remove(user[1]);
-                    }
-                }
+                users.array()
+                    .filter(u => u != formMessage.guild.me.user)
+                    .forEach(async u => await resolved.users.remove(u));
             }
         }
     }
@@ -114,15 +111,11 @@ const createForm = (message, buttons, callbacks) => {
     /**
      * Adds a new button at index.
      * If index is -1, the button gets pushed at the end of the list.
-     * If a button is already present, returns -1.
      * @param {string} button 
      * @param {number} index 
-     * @returns {Promise<number>}
+     * @returns {Promise<void>}
      */
     async function interface_add_button(button, index = -1) {
-        if (! formCallbacks.has(button))
-            return -1;
-
         if (index == -1)
             index = formButtons.length;
 
@@ -133,7 +126,6 @@ const createForm = (message, buttons, callbacks) => {
         formButtons.splice(index, 0, button);
 
         reactPromise = add_reacts(index);
-        return 0;
     }
 
     /**
@@ -159,16 +151,10 @@ const createForm = (message, buttons, callbacks) => {
 
     /**
      * Overrides the buttons, deletes and resends reactions
-     * Returns `n` if buttons[n] doesn't have a callback registered.
-     * Returns -1 otherwise.
      * @param {string[]} new_buttons 
-     * @returns {Promise<number>}
+     * @returns {Promise<void>}
      */
     async function interface_set_buttons(new_buttons) {
-        for (let i = 0; i < new_buttons.length; ++i)
-            if (! formCallbacks.has(new_buttons[i]))
-                return i;
-
         let sameUntil = 0;
 
         for (sameUntil = 0; sameUntil < Math.min(new_buttons.length, formButtons.length); ++sameUntil)
@@ -186,8 +172,28 @@ const createForm = (message, buttons, callbacks) => {
         formButtons = new_buttons.slice();
 
         reactPromise = add_reacts(sameUntil);
+    }
 
-        return -1;
+    /**
+     * Returns a map of all the reactions (excluding the client)
+     * @returns {Promise<Map<string, User[]>>}
+     */
+    async function interface_get_reactions() {
+        let result = new Map();
+
+        await reactPromise;
+
+        for (const button of formButtons) {
+            const resolved = formMessage.reactions.resolve(button);
+
+            if (resolved) {
+                const users = await resolved.users.fetch();
+
+                result.set(button, users.array().filter(u => u != formMessage.guild.me.user));
+            }
+        }
+
+        return result;
     }
 
     const formInterface = {
@@ -203,12 +209,14 @@ const createForm = (message, buttons, callbacks) => {
         addButton: interface_add_button,
         removeButton: interface_remove_button,
         setButtons: interface_set_buttons,
+        getReactions: interface_get_reactions,
         waitReactions: () => reactPromise
     };
 
     formCollector.on('collect', async (react, user) => {
         if (formButtons.some(v => v == react.emoji.name)) {
-            await formCallbacks.get(react.emoji.name)(user, formInterface);
+            if (formCallbacks.has(react.emoji.name))
+                formCallbacks.get(react.emoji.name)(user, formInterface);
         }
         else {
             // Remove unspecified reactions
@@ -221,11 +229,15 @@ const createForm = (message, buttons, callbacks) => {
     return formInterface;
 };
 
-const createFormMessage = async (channel, {content, extra_content}, buttons, callbacks) => {
+const createFormMessage = async (channel, content, buttons, callbacks) => {
     if (! channel.permissionsFor(channel.guild.me).has('SEND_MESSAGES'))
         throw Exception("Missing SEND_MESSAGES privilege");
 
-    const message = await channel.send(content, extra_content);
+    const {content: msg_content, extra_content: msg_extra_content} = content instanceof String || typeof content === "string"
+        ? {content, extra_content: undefined}
+        : content;
+
+    const message = await channel.send(msg_content, msg_extra_content);
 
     return createForm(message, buttons, callbacks);
 }

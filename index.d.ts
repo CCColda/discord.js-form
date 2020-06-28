@@ -1,5 +1,6 @@
 type TCallback = (user: Object, form: IForm) => void;
 type TCallbackMap = Map<string, TCallback>;
+type TCallbackMapLike = TCallbackMap | Object | undefined;
 
 /** Arguments for discord.js/TextChannel.send */
 interface TMessageContent {
@@ -39,41 +40,37 @@ interface IForm {
     /**
      * Adds a new button at index.
      * If index is -1, the button gets pushed at the end of the list.
-     * If a button is already present, returns -1.
      */
-    addButton(button: string, index: number): Promise<number>;
+    addButton(button: string, index: number): Promise<void>;
 
     /** Returns an existing button. If `button` doesn't exist, returns -1. */
     removeButton(button: string): Promise<number>;
 
-    /**
-     * Overrides the buttons, deletes and resends reactions
-     * Returns `n` if buttons[n] doesn't have a callback registered.
-     * Returns -1 otherwise.
-     */
-    setButtons(new_buttons: string[]): Promise<number>;
+    /** Overrides the buttons, deletes and resends reactions. */
+    setButtons(new_buttons: string[]): Promise<void>;
 
     /** Waits until all reactions are added. */
     waitReactions(): Promise<void>;
+
+    /** Returns a map of all the reactions (excluding the client) */
+    getReactions(): Promise<Map<string, Object[]>>;
 }
 
 /**
  * Creates a form on `message`.
- * `buttons` must contain strings which can be found in `callbacks` too.
- * @throws If message, buttons, or callbacks is empty, or if the user
+ * @throws If message, or buttons is empty, or if the user
  *         doesn't have ADD_REACTIONS privileges in the channel of `message`.
  */
-export function createForm(message: Object, buttons: string[], callbacks: TCallbackMap | Object): IForm;
+export function createForm(message: Object, buttons: string[], callbacks: TCallbackMapLike): IForm;
 
 /**
  * Creates a form on a new message.
- * `buttons` must contain strings which can be found in `callbacks` too.
- * @throws If message, buttons, or callbacks is empty, or if the user
+ * @throws If message, or buttons is empty, or if the user
  *         doesn't have ADD_REACTIONS or SEND_MESSAGES privileges in the channel.
  */
 export function createFormMessage(
     channel: Object,
-    content: TMessageContent,
+    content: TMessageContent | string,
     buttons: string[],
-    callbacks: TCallbackMap | Object
+    callbacks: TCallbackMapLike
 ): IForm;
