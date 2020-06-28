@@ -28,7 +28,7 @@ const scrollingList = {
 
 discordForm.createFormMessage(
     msg.channel,
-    { content: scrollingList.pages[0] },
+    scrollingList.pages[0],
     [ '🔼', '🔽' ],
     {
         '🔽': async (user, form) => {
@@ -61,7 +61,7 @@ const scrollingList = {
 
 createFormMessage(
     msg.channel,
-    { content: scrollingList.pages[0] },
+    scrollingList.pages[0],
     [ '🔼', '🔽' ],
     {
         '🔽': async (user: User, form: IForm) => {
@@ -84,6 +84,21 @@ createFormMessage(
 
 ## Preview
 ![Preview GIF](doc/preview.gif)
+
+# Interface
+| Function | Description |
+|:--------:|:------------|
+| `IForm.swap` | Swaps out an active button for another. |
+| `IForm.reset` | Clears every reaction, except the ones from the client. |
+| `IForm.clear` | Clears all reactions. |
+| `IForm.addButton` | Inserts a new reaction at the specified index. |
+| `IForm.removeButton` | Removes the specified reaction. |
+| `IForm.setButtons` | Clears previous buttons and sets them to the specified array. |
+| `IForm.waitReactions` | Returns a promise which will resolve when all required reactions are added. |
+| `IForm.getReactions` | Returns a map for each reaction not from the client. |
+| `IForm.message` (getter) | Returns the message the form is operating on. |
+| `IForm.buttons` (getter) | Returns the list of active buttons. |
+| `IForm.callbacks` (getter) | Returns the map of callbacks for the current form. |
 
 # License
 This project is under the MIT license.
