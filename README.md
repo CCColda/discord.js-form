@@ -94,7 +94,7 @@ createFormMessage(
 | Function | Description |
 |:--------:|:------------|
 | `createForm` | Creates a form on a given message. |
-| `createFormMessage` | Sends a message to the given channel, and returns createForm() on it. The second argument can either be a string, or an object with the structure `{ content: string | MessageEmbed, extra_content: Object }` |
+| `createFormMessage` | Sends a message to the given channel, and returns createForm() on it. The second argument can either be a string, or an object with a `content` and `extra_content` property. |
 ---
 | Function | Description |
 |:--------:|:------------|
