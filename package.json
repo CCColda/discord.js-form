@@ -16,6 +16,9 @@
     "type": "git",
     "url": "https://github.com/CCColda/discord.js-form.git"
   },
+  "bugs": {
+    "url": "https://github.com/CCColda/discord.js-form/issues"
+  },
   "readme": "https://github.com/CCColda/discord.js-form.git#readme",
   "author": "CCColda",
   "license": "MIT"

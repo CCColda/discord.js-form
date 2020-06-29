@@ -12,9 +12,14 @@ To install, open a shell at your bot directory and run:
 ```
 npm i discord.js-form
 ```
+---
+This package was made for [**discord.js** ^12.2](https://discord.js.org/#/docs/main/12.2.0/general/welcome). If you do not have it installed, type:
+```
+npm i discord.js@^12.2
+```
 
 # Usage Example
-*Scrolling lists*
+## *Scrolling Lists*
 
 ### JavaScript
 
@@ -28,7 +33,7 @@ const scrollingList = {
 
 discordForm.createFormMessage(
     msg.channel,
-    scrollingList.pages[0],
+    scrollingList.pages[0], // Optionally { content: ... }
     [ '🔼', '🔽' ],
     {
         '🔽': async (user, form) => {
@@ -61,7 +66,7 @@ const scrollingList = {
 
 createFormMessage(
     msg.channel,
-    scrollingList.pages[0],
+    scrollingList.pages[0], // Optionally { content: ... }
     [ '🔼', '🔽' ],
     {
         '🔽': async (user: User, form: IForm) => {
@@ -86,6 +91,11 @@ createFormMessage(
 ![Preview GIF](doc/preview.gif)
 
 # Interface
+| Function | Description |
+|:--------:|:------------|
+| `createForm` | Creates a form on a given message. |
+| `createFormMessage` | Sends a message to the given channel, and returns createForm() on it. The second argument can either be a string, or an object with the structure `{ content: string | MessageEmbed, extra_content: Object }` |
+---
 | Function | Description |
 |:--------:|:------------|
 | `IForm.swap` | Swaps out an active button for another. |
