@@ -13,9 +13,9 @@ const createForm = (message, buttons, callbacks) => {
         ? new Map(callbacks)
         : new Map(Object.entries(callbacks || {}));
 
-    const formMessage = message;
+    let formMessage = message;
 
-    const formCollector = formMessage.createReactionCollector(
+    let formCollector = formMessage.createReactionCollector(
         filter = (react, user) => user != formMessage.guild.me.user,
         options = {}
     );
@@ -205,6 +205,7 @@ const createForm = (message, buttons, callbacks) => {
         stop: interface_stop,
         clear: interface_clear,
         reset: interface_reset,
+        transfer: null,
         setCallback: interface_set_callback,
         addButton: interface_add_button,
         removeButton: interface_remove_button,
@@ -212,6 +213,43 @@ const createForm = (message, buttons, callbacks) => {
         getReactions: interface_get_reactions,
         waitReactions: () => reactPromise
     };
+
+    /**
+     * Transfer the whole interface to another message.
+     * @throws If the client does not have permissions to add reactions in the channel of the new message.
+     * @param {Object} new_message
+     * @returns {Promise<void>}
+     */
+    async function interface_transfer(new_message) {
+        if (! message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
+            throw Error("Missing ADD_REACTIONS privilege");
+
+        await reactPromise;
+
+        let newFormCollector = new_message.createReactionCollector(
+            filter = (react, user) => user != formMessage.guild.me.user,
+            options = {}
+        );
+
+        formCollector.stop();
+
+        formMessage = new_message;
+        formCollector = newFormCollector;
+
+        formCollector.on('collect', async (react, user) => {
+            if (formButtons.some(v => v == react.emoji.name)) {
+                if (formCallbacks.has(react.emoji.name))
+                    formCallbacks.get(react.emoji.name)(user, formInterface);
+            }
+            else {
+                await react.users.remove(user);
+            }
+        });
+
+        reactPromise = add_reacts(0);
+    }
+
+    formInterface.transfer = interface_transfer;
 
     formCollector.on('collect', async (react, user) => {
         if (formButtons.some(v => v == react.emoji.name)) {

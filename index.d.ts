@@ -34,6 +34,12 @@ interface IForm {
     /** Resets the buttons, removes all reactions not from the bot. */
     reset(): Promise<void>;
 
+    /**
+     * Transfer the whole interface to another message.
+     * @throws If the client does not have permissions to add reactions in the channel of the new message.
+     */
+    transfer(new_message: Object): Promise<void>;
+
     /** Sets the callback for `button`. */
     setCallback(button: string, callback: TCallback): void;
 

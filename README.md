@@ -99,8 +99,10 @@ createFormMessage(
 | Function | Description |
 |:--------:|:------------|
 | `IForm.swap` | Swaps out an active button for another. |
+| `IForm.stop` | Stops the reaction collector. |
 | `IForm.reset` | Clears every reaction, except the ones from the client. |
 | `IForm.clear` | Clears all reactions. |
+| `IForm.transfer` | Transfers all the reactions and the reaction collector to another message. |
 | `IForm.addButton` | Inserts a new reaction at the specified index. |
 | `IForm.removeButton` | Removes the specified reaction. |
 | `IForm.setButtons` | Clears previous buttons and sets them to the specified array. |
