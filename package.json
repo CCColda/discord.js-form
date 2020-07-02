@@ -1,6 +1,6 @@
 {
   "name": "discord.js-form",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A JavaScript library for handling discord.js reactions",
   "main": "index.js",
   "scripts": {
