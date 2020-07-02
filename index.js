@@ -20,6 +20,9 @@ const createForm = (message, buttons, callbacks) => {
         options = {}
     );
 
+    /** @type {Map<string, Set<Object>>} */
+    let reactionCache = new Map();
+
     /** @type {Promise<void> | undefined} */
     let reactPromise = undefined;
 
@@ -52,8 +55,10 @@ const createForm = (message, buttons, callbacks) => {
 
         await reactPromise;
 
-        for (let i = indexA; i < formButtons.length; ++i)
+        for (let i = indexA; i < formButtons.length; ++i) {
+            reactionCache.delete(formButtons[i]);
             await formMessage.reactions.resolve(formButtons[i]).remove();
+        }
 
         formButtons[indexA] = button_b;
 
@@ -76,6 +81,7 @@ const createForm = (message, buttons, callbacks) => {
      */
     async function interface_clear() {
         await reactPromise;
+        reactionCache.clear();
         await formMessage.reactions.removeAll();
     }
 
@@ -85,6 +91,7 @@ const createForm = (message, buttons, callbacks) => {
      */
     async function interface_reset() {
         await reactPromise;
+        reactionCache.clear();
 
         for (const button of formButtons) {
             const resolved = formMessage.reactions.resolve(button);
@@ -120,8 +127,10 @@ const createForm = (message, buttons, callbacks) => {
             index = formButtons.length;
 
         await reactPromise;
-        for (let i = index; i < formButtons.length; ++i)
+        for (let i = index; i < formButtons.length; ++i) {
+            reactionCache.delete(formButtons[i]);
             await formMessage.reactions.resolve(formButtons[i]).remove();
+        }
 
         formButtons.splice(index, 0, button);
 
@@ -140,8 +149,10 @@ const createForm = (message, buttons, callbacks) => {
             return -1;
 
         await reactPromise;
-        for (let i = buttonIndex; i < formButtons.length; ++i)
+        for (let i = buttonIndex; i < formButtons.length; ++i) {
+            reactionCache.delete(formButtons[i]);
             await formMessage.reactions.resolve(formButtons[i]).remove();
+        }
 
         formButtons.splice(buttonIndex, 1);
 
@@ -163,11 +174,16 @@ const createForm = (message, buttons, callbacks) => {
 
         await reactPromise;
 
-        if (sameUntil == 0)
+        if (sameUntil == 0) {
+            reactionCache.clear();
             await formMessage.reactions.removeAll();
-        else
-            for (let i = sameUntil; i < formButtons.length; ++i)
+        }
+        else {
+            for (let i = sameUntil; i < formButtons.length; ++i) {
+                reactionCache.delete(formButtons[i]);
                 await formMessage.reactions.resolve(formButtons[i]).remove();
+            }
+        }
 
         formButtons = new_buttons.slice();
 
@@ -175,10 +191,33 @@ const createForm = (message, buttons, callbacks) => {
     }
 
     /**
-     * Returns a map of all the reactions (excluding the client)
+     * Returns a map of cached reactions, excluding the ones from the client.
+     * @returns {Map<string, Object[]>}
+     */
+    function interface_get_reactions() {
+        const entryArray = [...reactionCache.entries()];
+        let transformArray = [ ];
+
+        for (let buttonIndex in formButtons) {
+            const index = entryArray.findIndex(([v]) => v == formButtons[buttonIndex]);
+            if (index != -1)
+                transformArray.push([
+                    entryArray[index][0],
+                    [...(entryArray[index][1].values())]
+                ]);
+            else
+                transformArray.push([formButtons[buttonIndex], []]);
+        }
+
+        return new Map(transformArray);
+    }
+
+    /**
+     * Fetches a map of all the reactions (excluding the client).
+     * Doesn't modify the cache.
      * @returns {Promise<Map<string, User[]>>}
      */
-    async function interface_get_reactions() {
+    async function interface_fetch_reactions() {
         let result = new Map();
 
         await reactPromise;
@@ -211,6 +250,7 @@ const createForm = (message, buttons, callbacks) => {
         removeButton: interface_remove_button,
         setButtons: interface_set_buttons,
         getReactions: interface_get_reactions,
+        fetchReactions: interface_fetch_reactions,
         waitReactions: () => reactPromise
     };
 
@@ -232,18 +272,30 @@ const createForm = (message, buttons, callbacks) => {
         );
 
         formCollector.stop();
+        reactionCache.clear();
 
         formMessage = new_message;
         formCollector = newFormCollector;
 
         formCollector.on('collect', async (react, user) => {
             if (formButtons.some(v => v == react.emoji.name)) {
+                if (reactionCache.has(react.emoji.name))
+                    reactionCache.get(react.emoji.name).add(user);
+                else
+                    reactionCache.set(react.emoji.name, new Set([ user ]));
+    
                 if (formCallbacks.has(react.emoji.name))
                     formCallbacks.get(react.emoji.name)(user, formInterface);
             }
             else {
                 await react.users.remove(user);
             }
+        });
+    
+        formCollector.on('remove', async (react, user) => {
+            if (formButtons.some(v => v == react.emoji.name))
+                if (reactionCache.has(react.emoji.name))
+                    reactionCache.get(react.emoji.name).delete(user);
         });
 
         reactPromise = add_reacts(0);
@@ -253,6 +305,11 @@ const createForm = (message, buttons, callbacks) => {
 
     formCollector.on('collect', async (react, user) => {
         if (formButtons.some(v => v == react.emoji.name)) {
+            if (reactionCache.has(react.emoji.name))
+                reactionCache.get(react.emoji.name).add(user);
+            else
+                reactionCache.set(react.emoji.name, new Set([ user ]));
+
             if (formCallbacks.has(react.emoji.name))
                 formCallbacks.get(react.emoji.name)(user, formInterface);
         }
@@ -260,6 +317,12 @@ const createForm = (message, buttons, callbacks) => {
             // Remove unspecified reactions
             await react.users.remove(user);
         }
+    });
+
+    formCollector.on('remove', async (react, user) => {
+        if (formButtons.some(v => v == react.emoji.name))
+            if (reactionCache.has(react.emoji.name))
+                reactionCache.get(react.emoji.name).delete(user);
     });
 
     reactPromise = add_reacts(0);

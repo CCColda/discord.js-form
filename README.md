@@ -107,7 +107,8 @@ createFormMessage(
 | `IForm.removeButton` | Removes the specified reaction. |
 | `IForm.setButtons` | Clears previous buttons and sets them to the specified array. |
 | `IForm.waitReactions` | Returns a promise which will resolve when all required reactions are added. |
-| `IForm.getReactions` | Returns a map for each reaction not from the client. |
+| `IForm.getReactions` | Returns a map for each reaction not from the client from the cache. |
+| `IForm.fetchReactions` | Fetches a map for each reaction not from the client. |
 | `IForm.message` (getter) | Returns the message the form is operating on. |
 | `IForm.buttons` (getter) | Returns the list of active buttons. |
 | `IForm.callbacks` (getter) | Returns the map of callbacks for the current form. |

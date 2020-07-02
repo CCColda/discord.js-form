@@ -58,8 +58,17 @@ interface IForm {
     /** Waits until all reactions are added. */
     waitReactions(): Promise<void>;
 
-    /** Returns a map of all the reactions (excluding the client) */
-    getReactions(): Promise<Map<string, Object[]>>;
+    /**
+     * Returns a map of all the reactions (excluding the client)
+     * from the cache. The format is the same as fetchReactions'.
+     */
+    getReactions(): Map<string, Object[]>;
+
+    /**
+     * Fetches a map of all the reactions (excluding the client).
+     * This might take more time than just caching with getReactions.
+     */
+    fetchReactions(): Promise<Map<string, Object[]>>;
 }
 
 /**
