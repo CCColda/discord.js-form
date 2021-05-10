@@ -1,14 +1,22 @@
+/**
+ * Creates a form on `message`.
+ * @throws If message, or buttons is empty, or if the user
+ *         doesn't have ADD_REACTIONS privileges in the channel of `message`.
+ * @param {import('discord.js').Message} message 
+ * @param {string[]} buttons 
+ * @param {import('.').TCallbackMapLike} callbacks 
+ * @returns {import('.').IForm}
+ */
 const createForm = (message, buttons, callbacks) => {
-    if (! message) throw Error("Missing message for discordForm");
-    if (! buttons) throw Error("Missing buttons for discordForm");
+    if (!message) throw Error("Missing message for discordForm");
+    if (!buttons) throw Error("Missing buttons for discordForm");
 
-    if (! message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
+    if (!message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
         throw Error("Missing ADD_REACTIONS privilege");
 
-    /** @type {string[]} */
     let formButtons = buttons.slice();
 
-    /** @type {TCallbackMap} */
+    /** @type {import('.').TCallbackMap} */
     let formCallbacks = callbacks instanceof Map
         ? new Map(callbacks)
         : new Map(Object.entries(callbacks || {}));
@@ -16,11 +24,11 @@ const createForm = (message, buttons, callbacks) => {
     let formMessage = message;
 
     let formCollector = formMessage.createReactionCollector(
-        filter = (react, user) => user != formMessage.guild.me.user,
-        options = {}
+        (_react, user) => user != formMessage.guild.me.user,
+        {}
     );
 
-    /** @type {Map<string, Set<Object>>} */
+    /** @type {Map<string, Set<User>>} */
     let reactionCache = new Map();
 
     /** @type {Promise<void> | undefined} */
@@ -44,11 +52,11 @@ const createForm = (message, buttons, callbacks) => {
      * Returns -1 if formCallbacks doesn't contain either of the buttons.
      * @param {string} button_a 
      * @param {string} button_b 
-     * @returns {Promise<number>}
+     * @returns {Promise<(-1 | 0)>}
      */
     async function interface_swap(button_a, button_b) {
-        if (! formCallbacks.has(button_a) ||
-            ! formCallbacks.has(button_b))
+        if (!formCallbacks.has(button_a) ||
+            !formCallbacks.has(button_b))
             return -1;
 
         const indexA = formButtons.findIndex(v => v == button_a);
@@ -109,7 +117,7 @@ const createForm = (message, buttons, callbacks) => {
     /**
      * Sets the callback for `button`
      * @param {string} button 
-     * @param {function(User, IForm)} callback 
+     * @param {import('.').TCallback} callback 
      */
     function interface_set_callback(button, callback) {
         formCallbacks.set(button, callback);
@@ -192,18 +200,18 @@ const createForm = (message, buttons, callbacks) => {
 
     /**
      * Returns a map of cached reactions, excluding the ones from the client.
-     * @returns {Map<string, Object[]>}
+     * @returns {Map<string, User[]>}
      */
     function interface_get_reactions() {
-        const entryArray = [...reactionCache.entries()];
-        let transformArray = [ ];
+        const cacheEntries = [...reactionCache.entries()];
+        let transformArray = [];
 
         for (let buttonIndex in formButtons) {
-            const index = entryArray.findIndex(([v]) => v == formButtons[buttonIndex]);
-            if (index != -1)
+            const buttonIndexInCache = cacheEntries.findIndex(([v]) => v == formButtons[buttonIndex]);
+            if (buttonIndexInCache != -1)
                 transformArray.push([
-                    entryArray[index][0],
-                    [...(entryArray[index][1].values())]
+                    cacheEntries[buttonIndexInCache][0],
+                    [...(cacheEntries[buttonIndexInCache][1].values())]
                 ]);
             else
                 transformArray.push([formButtons[buttonIndex], []]);
@@ -257,18 +265,18 @@ const createForm = (message, buttons, callbacks) => {
     /**
      * Transfer the whole interface to another message.
      * @throws If the client does not have permissions to add reactions in the channel of the new message.
-     * @param {Object} new_message
+     * @param {Message} new_message
      * @returns {Promise<void>}
      */
     async function interface_transfer(new_message) {
-        if (! message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
+        if (!message.channel.permissionsFor(message.guild.me).has('ADD_REACTIONS'))
             throw Error("Missing ADD_REACTIONS privilege");
 
         await reactPromise;
 
         let newFormCollector = new_message.createReactionCollector(
-            filter = (react, user) => user != formMessage.guild.me.user,
-            options = {}
+            (_react, user) => user != formMessage.guild.me.user,
+            {}
         );
 
         formCollector.stop();
@@ -282,8 +290,8 @@ const createForm = (message, buttons, callbacks) => {
                 if (reactionCache.has(react.emoji.name))
                     reactionCache.get(react.emoji.name).add(user);
                 else
-                    reactionCache.set(react.emoji.name, new Set([ user ]));
-    
+                    reactionCache.set(react.emoji.name, new Set([user]));
+
                 if (formCallbacks.has(react.emoji.name))
                     formCallbacks.get(react.emoji.name)(user, formInterface);
             }
@@ -291,7 +299,7 @@ const createForm = (message, buttons, callbacks) => {
                 await react.users.remove(user);
             }
         });
-    
+
         formCollector.on('remove', async (react, user) => {
             if (formButtons.some(v => v == react.emoji.name))
                 if (reactionCache.has(react.emoji.name))
@@ -308,7 +316,7 @@ const createForm = (message, buttons, callbacks) => {
             if (reactionCache.has(react.emoji.name))
                 reactionCache.get(react.emoji.name).add(user);
             else
-                reactionCache.set(react.emoji.name, new Set([ user ]));
+                reactionCache.set(react.emoji.name, new Set([user]));
 
             if (formCallbacks.has(react.emoji.name))
                 formCallbacks.get(react.emoji.name)(user, formInterface);
@@ -330,12 +338,22 @@ const createForm = (message, buttons, callbacks) => {
     return formInterface;
 };
 
+/**
+ * Creates a form on a new message.
+ * @throws If message, or buttons is empty, or if the user
+ *         doesn't have ADD_REACTIONS or SEND_MESSAGES privileges in the channel.
+ * @param {import('discord.js').MessageTarget} channel 
+ * @param {import('.').TMessageContent} content 
+ * @param {string[]} buttons 
+ * @param {import('.').TCallbackMapLike} callbacks 
+ * @return {import('.').IForm} 
+ */
 const createFormMessage = async (channel, content, buttons, callbacks) => {
-    if (! channel.permissionsFor(channel.guild.me).has('SEND_MESSAGES'))
+    if (!channel.permissionsFor(channel.guild.me).has('SEND_MESSAGES'))
         throw Exception("Missing SEND_MESSAGES privilege");
 
-    const {content: msg_content, extra_content: msg_extra_content} = content instanceof String || typeof content === "string"
-        ? {content, extra_content: undefined}
+    const { content: msg_content, extra_content: msg_extra_content } = content instanceof String || typeof content === "string"
+        ? { content, extra_content: undefined }
         : content;
 
     const message = await channel.send(msg_content, msg_extra_content);

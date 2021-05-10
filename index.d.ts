@@ -1,17 +1,20 @@
-type TCallback = (user: Object, form: IForm) => void;
+import { User, Message, MessageOptions, MessageTarget } from "discord.js";
+
+type TCallback = (user: User, form: IForm) => any;
 type TCallbackMap = Map<string, TCallback>;
-type TCallbackMapLike = TCallbackMap | Object | undefined;
+type TCallbackDictionary = { [_: string]: TCallback };
+type TCallbackMapLike = TCallbackMap | TCallbackDictionary | undefined;
 
 /** Arguments for discord.js/TextChannel.send */
 interface TMessageContent {
-    content: string | Object;
-    extra_content?: Object;
+    content: string | MessageOptions;
+    extra_content?: MessageOptions;
 }
 
 /** Interface for manipulating a form */
 interface IForm {
     /** Message the form was called on */
-    message: Object;
+    message: Message;
 
     /** Active buttons on the form */
     buttons: readonly string[];
@@ -24,7 +27,7 @@ interface IForm {
      * Returns -1 if formCallbacks doesn't contain either of the buttons.
      */
     swap(button_a: string, button_b: string): Promise<number>;
-    
+
     /** Stops the reaction collector. */
     stop(): void;
 
@@ -38,7 +41,7 @@ interface IForm {
      * Transfer the whole interface to another message.
      * @throws If the client does not have permissions to add reactions in the channel of the new message.
      */
-    transfer(new_message: Object): Promise<void>;
+    transfer(new_message: Message): Promise<void>;
 
     /** Sets the callback for `button`. */
     setCallback(button: string, callback: TCallback): void;
@@ -62,13 +65,13 @@ interface IForm {
      * Returns a map of all the reactions (excluding the client)
      * from the cache. The format is the same as fetchReactions'.
      */
-    getReactions(): Map<string, Object[]>;
+    getReactions(): Map<string, User[]>;
 
     /**
      * Fetches a map of all the reactions (excluding the client).
      * This might take more time than just caching with getReactions.
      */
-    fetchReactions(): Promise<Map<string, Object[]>>;
+    fetchReactions(): Promise<Map<string, User[]>>;
 }
 
 /**
@@ -76,7 +79,7 @@ interface IForm {
  * @throws If message, or buttons is empty, or if the user
  *         doesn't have ADD_REACTIONS privileges in the channel of `message`.
  */
-export function createForm(message: Object, buttons: string[], callbacks: TCallbackMapLike): IForm;
+export function createForm(message: Message, buttons: string[], callbacks: TCallbackMapLike): IForm;
 
 /**
  * Creates a form on a new message.
@@ -84,7 +87,7 @@ export function createForm(message: Object, buttons: string[], callbacks: TCallb
  *         doesn't have ADD_REACTIONS or SEND_MESSAGES privileges in the channel.
  */
 export function createFormMessage(
-    channel: Object,
+    channel: MessageTarget,
     content: TMessageContent | string,
     buttons: string[],
     callbacks: TCallbackMapLike
