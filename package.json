@@ -21,5 +21,8 @@
   },
   "readme": "https://github.com/CCColda/discord.js-form.git#readme",
   "author": "CCColda",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^12.5.3"
+  }
 }
